@@ -41,7 +41,8 @@ public class TestUtils {
 
 	public static final String GUID = "6ed39465-d6d3-4ec4-b27d-1dcb870b2992";
 	public static String customData;
-	public static final String URL = "https://yaksha-prod-sbfn.azurewebsites.net/api/YakshaMFAEnqueue?code=jSTWTxtQ8kZgQ5FC0oLgoSgZG7UoU9Asnmxgp6hLLvYId/GW9ccoLw==";
+	public static final String URL =  "https://compiler.techademy.com/v1/mfa-results/push";
+
 	static {
 		total = 0;
 		passed = 0;
@@ -96,8 +97,18 @@ public class TestUtils {
 			e.printStackTrace();
 			System.out.println(e.getMessage());
 		}
+		
+		String hostName = System.getenv("HOSTNAME");
+		String AttemptId = System.getenv("ATTEMPT_ID");
+
 		testResults.setTestCaseResults(asJsonString(testCaseResults));
 		testResults.setCustomData(customData);
+		testResults.setHosttName(hostName);
+		testResults.setAttemptId(AttemptId);
+
+		int length = 0;
+		if(customData != null) {length = customData.length(); }
+
 
 		try {
 
@@ -107,18 +118,26 @@ public class TestUtils {
 			conn.setRequestMethod("POST");
 			conn.setRequestProperty("Content-Type", "application/json");
 
-//	String input = "{\"qty\":100,\"name\":\"iPad 4\"}";
+			//	String input = "{\"qty\":100,\"name\":\"iPad 4\"}";
 			String input = asJsonString(testResults);
 			OutputStream os = conn.getOutputStream();
 			os.write(input.getBytes());
 			os.flush();
+			os.close();
 
-			BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
-
-			String output;
-			while ((output = br.readLine()) != null) {
-				System.out.println(output);
+			int responseCode = conn.getResponseCode();
+			if (!(responseCode == HttpURLConnection.HTTP_OK  || responseCode == HttpURLConnection.HTTP_CREATED)) { 
+				System.out.println(RED_BOLD_BRIGHT + "⚠️ Unable to push test cases,please try again! [" + responseCode +"|" + hostName +"|" + AttemptId + "|" + length + "]" + TEXT_RESET);
 			}
+
+
+
+			// BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+
+			// // String output;
+			// // while ((output = br.readLine()) != null) {
+			// // 	System.out.println(output);
+			// // }
 
 			conn.disconnect();
 
@@ -171,6 +190,8 @@ public class TestUtils {
 		String jsonString = "";
 		try {
 			jsonString = mapper.writeValueAsString(obj);
+//			System.out.println("jsonString");
+//			System.out.println(jsonString);
 		} catch (JsonProcessingException e) {
 
 			e.printStackTrace();
